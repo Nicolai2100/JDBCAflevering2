@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class UserDAOImpls185020 implements IUserDAO {
-    //må metoden godt smide den exception?
     private Connection createConnection() throws DALException {
         try {
             return DriverManager.getConnection("jdbc:mysql://ec2-52-30-211-3.eu-west-1.compute.amazonaws.com/s185020",
@@ -17,6 +16,7 @@ public class UserDAOImpls185020 implements IUserDAO {
             throw new DALException(e.getMessage());
         }
     }
+
     @Override
     public void createUser(IUserDTO user) throws DALException {
         Connection conn = null;
@@ -28,6 +28,8 @@ public class UserDAOImpls185020 implements IUserDAO {
                             "VALUES(?,?,?)");
 
             pSmtInsertUser.setInt(1, user.getUserId());
+
+
         } catch (Exception e) {
             System.out.println("The user cannot be created without a valid ID");
         }
@@ -41,9 +43,18 @@ public class UserDAOImpls185020 implements IUserDAO {
             setUserRoles(user, conn);
             System.out.println("The user was successfully created in the database system");
 
+            pSmtInsertUser.close();
+            conn.close();
         } catch (SQLException e) {
             System.out.println("Error! " + e.getMessage());
-        }
+        }/*finally {
+            try {
+                //conn.close();
+                conn.commit();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
+        }*/
     }
 
     @Override
@@ -78,7 +89,7 @@ public class UserDAOImpls185020 implements IUserDAO {
 
     @Override
     public List<IUserDTO> getUserList() throws DALException {
-        List<UserDTO> userList = new ArrayList<>();
+        List<IUserDTO> userList = new ArrayList<>();
         try {
             Connection conn = createConnection();
             PreparedStatement pSmtSelectAllTable = conn.prepareStatement(
@@ -103,6 +114,7 @@ public class UserDAOImpls185020 implements IUserDAO {
         }
         return userList;
     }
+
     @Override
     public void updateUser(IUserDTO user) throws DALException {
         try {
@@ -149,6 +161,7 @@ public class UserDAOImpls185020 implements IUserDAO {
             System.out.println(e.getMessage());
         }
     }
+
     public List<String> getUserRoleList(int userID) throws DALException {
         List<String> userRoleList = new ArrayList<>();
         try {
@@ -170,17 +183,16 @@ public class UserDAOImpls185020 implements IUserDAO {
         return userRoleList;
     }
 
-    public void getAllUsersRoles(List<UserDTO> userDTOList) throws DALException {
+    public void getAllUsersRoles(List<IUserDTO> userDTOList) throws DALException {
 
-        for (UserDTO user : userDTOList) {
+        for (IUserDTO user : userDTOList) {
             List<String> userRoleList = getUserRoleList(user.getUserId());
             user.setRoles(userRoleList);
         }
     }
 
-    public void setUserRoles(UserDTO user, Connection conn) throws DALException {
+    public void setUserRoles(IUserDTO user, Connection conn) throws DALException {
         try {
-            /*Connection conn = createConnection();*/
             PreparedStatement pSmtInsertUserRole = conn.prepareStatement(
                     "INSERT INTO user_roles " +
                             "VALUES(?,?)");
