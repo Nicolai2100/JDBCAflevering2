@@ -22,48 +22,44 @@ public class UserDAOImpls185020 implements IUserDAO {
     public void createUser(IUserDTO user) throws DALException {
         Connection conn = null;
         PreparedStatement pSmtInsertUser = null;
+        if (user.getUserId() < 1) {
+            System.out.println("Error in userID!");
+            return;
+        }
+
         try {
             conn = createConnection();
             pSmtInsertUser = conn.prepareStatement(
                     "INSERT INTO user_table " +
                             "VALUES(?,?,?)");
-
             pSmtInsertUser.setInt(1, user.getUserId());
-
-
-        } catch (Exception e) {
-            System.out.println("The user cannot be created without a valid ID");
-        }
-        try {
             pSmtInsertUser.setString(2, user.getUserName());
             pSmtInsertUser.setString(3, user.getIni());
 
-            // Bør gøres atomic - da bruger ellers oprettes uden roller!!!
+            // Bør gøres atomic - da bruger ellers oprettes uden roller!
             pSmtInsertUser.executeUpdate();
             //Først oprettes brugeren - så indsættes rollerne.
             setUserRoles(conn, user);
             System.out.println("The user was successfully created in the database system");
 
-            pSmtInsertUser.close();
-
         } catch (SQLException e) {
             System.out.println("Error! " + e.getMessage());
-        }/*finally {
+        } finally {
             try {
-                //conn.close();
-                conn.commit();
+                conn.close();
             } catch (SQLException e) {
                 System.out.println(e.getMessage());
             }
-        }*/
+        }
     }
 
     @Override
     public IUserDTO getUser(int userId) throws DALException {
         boolean empty = true;
         UserDTO returnUser = new UserDTO();
+        Connection conn = null;
         try {
-            Connection conn = createConnection();
+            conn = createConnection();
             PreparedStatement pSmtSelectUser = conn.prepareStatement(
                     "SELECT * " +
                             "FROM user_table " +
@@ -84,6 +80,12 @@ public class UserDAOImpls185020 implements IUserDAO {
             }
         } catch (SQLException e) {
             System.out.println("Error! " + e.getMessage());
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
         }
         return returnUser;
     }
@@ -113,16 +115,22 @@ public class UserDAOImpls185020 implements IUserDAO {
         } catch (SQLException e) {
             System.out.println("Error " + e.getMessage());
         } finally {
-            //Først hentes brugerne ned, så hentes deres roller og tilføjes hver bruger.
             getAllUsersRoles(conn, userList);
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
         }
         return userList;
     }
 
     @Override
     public void updateUser(IUserDTO user) throws DALException {
+        Connection conn = null;
         try {
-            Connection conn = createConnection();
+            conn = createConnection();
+
             if (!peekUser(conn, user.getUserId())) {
                 System.out.println("No such user in the database!");
             } else {
@@ -144,18 +152,24 @@ public class UserDAOImpls185020 implements IUserDAO {
             }
         } catch (SQLException e) {
             System.out.println("Error! " + e.getMessage());
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 
     @Override
     public void deleteUser(int userId) throws DALException {
         int result;
+        Connection conn = null;
         try {
-            Connection conn = createConnection();
+            conn = createConnection();
             PreparedStatement pSmtDeleteUser = conn.prepareStatement(
                     "DELETE FROM user_table " +
                             "WHERE userid = ?");
-
             pSmtDeleteUser.setInt(1, userId);
             result = pSmtDeleteUser.executeUpdate();
             if (result == 1) {
@@ -166,6 +180,12 @@ public class UserDAOImpls185020 implements IUserDAO {
             pSmtDeleteUser.close();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
+        } finally {
+            try {
+                conn.close();
+            } catch (SQLException e) {
+                System.out.println(e.getMessage());
+            }
         }
     }
 
@@ -294,11 +314,12 @@ public class UserDAOImpls185020 implements IUserDAO {
             return true;
         }
     }
-    public void deleteAllRoles(Connection conn, int userid){
+
+    public void deleteAllRoles(Connection conn, int userid) {
         try {
             PreparedStatement prep = conn.prepareStatement(
-                   "DELETE FROM user_roles " +
-                           "WHERE userid = ?" );
+                    "DELETE FROM user_roles " +
+                            "WHERE userid = ?");
             prep.setInt(1, userid);
             prep.executeUpdate();
         } catch (SQLException e) {
