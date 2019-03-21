@@ -21,7 +21,6 @@ public class UserDAOImpls185020 implements IUserDAO {
     @Override
     public void createUser(IUserDTO user) throws DALException {
         Connection conn = null;
-        PreparedStatement pSmtInsertUser = null;
         if (user.getUserId() < 1) {
             System.out.println("Error in userID!");
             return;
@@ -29,7 +28,7 @@ public class UserDAOImpls185020 implements IUserDAO {
 
         try {
             conn = createConnection();
-            pSmtInsertUser = conn.prepareStatement(
+            PreparedStatement pSmtInsertUser = conn.prepareStatement(
                     "INSERT INTO user_table " +
                             "VALUES(?,?,?)");
             pSmtInsertUser.setInt(1, user.getUserId());
@@ -189,7 +188,10 @@ public class UserDAOImpls185020 implements IUserDAO {
         }
     }
 
-    public List<String> getUserRoleList(Connection conn, int userID) throws DALException {
+    /**
+     * Metoden henter en specifik brugers roller og returnerer dem i en liste.
+     */
+    public List<String> getUserRoleList(Connection conn, int userID) {
         List<String> userRoleList = new ArrayList<>();
         try {
             PreparedStatement pSmtSelectUserRoles = conn.prepareStatement(
@@ -210,7 +212,10 @@ public class UserDAOImpls185020 implements IUserDAO {
         return userRoleList;
     }
 
-    public void getAllUsersRoles(Connection conn, List<IUserDTO> userDTOList) throws DALException {
+    /**
+     * Metoden henter og gemmer roller for alle brugere i en liste.
+     */
+    public void getAllUsersRoles(Connection conn, List<IUserDTO> userDTOList) {
 
         for (IUserDTO user : userDTOList) {
             List<String> userRoleList = getUserRoleList(conn, user.getUserId());
@@ -218,6 +223,9 @@ public class UserDAOImpls185020 implements IUserDAO {
         }
     }
 
+    /**
+     * Metoden opretter og gemmer roller for en brugere i user_roles.
+     */
     public void setUserRoles(Connection conn, IUserDTO user) throws DALException {
         try {
             PreparedStatement pSmtInsertUserRole = conn.prepareStatement(
@@ -225,7 +233,6 @@ public class UserDAOImpls185020 implements IUserDAO {
                             "VALUES(?,?)");
 
             pSmtInsertUserRole.setInt(1, user.getUserId());
-
             for (int i = 0; i < user.getRoles().size(); i++) {
                 String role = user.getRoles().get(i);
                 int roleInt = getRoleID(conn, role);
@@ -237,6 +244,9 @@ public class UserDAOImpls185020 implements IUserDAO {
         }
     }
 
+    /**
+     * Metoden henter en specifik rolles roleid fra role_table og returnerer den.
+     */
     public int getRoleID(Connection conn, String role) throws DALException {
         int returnInt = 0;
         try {
@@ -260,6 +270,9 @@ public class UserDAOImpls185020 implements IUserDAO {
         return returnInt;
     }
 
+    /**
+     * Metoden opretter nye roller i role_table og returnerer rollens roleid.
+     */
     public int createNewRole(Connection conn, String userRole) {
         int newRoleID = 0;
         try {
@@ -276,6 +289,10 @@ public class UserDAOImpls185020 implements IUserDAO {
         return newRoleID;
     }
 
+    /**
+     * Metoden henter den maksimale roleid fra role_table og returnere denne inkrementeret med 1.
+     * Dette bruges, når der skal oprettes nye roller i role_table
+     */
     public int getMaxFromRoleTable(Connection conn) {
         int resultInt = 0;
         try {
@@ -291,6 +308,10 @@ public class UserDAOImpls185020 implements IUserDAO {
         return resultInt + 1;
     }
 
+    /**
+     * Metoden bruges til at undersøge om der eksisterer en bruger med et
+     * specifikt userid i user_table. Den returnerer false, hvis der ikke gør.
+     */
     public boolean peekUser(Connection conn, int userID) throws DALException {
         int returnInt = 0;
         try {
@@ -315,6 +336,11 @@ public class UserDAOImpls185020 implements IUserDAO {
         }
     }
 
+    /**
+     * Metoden sletter alle roller for en specifik bruger.
+     * Dette bruges når brugeren bliver opdateret, for at undgå at
+     * brugeren får flere roller end denne bør have.
+     */
     public void deleteAllRoles(Connection conn, int userid) {
         try {
             PreparedStatement prep = conn.prepareStatement(
