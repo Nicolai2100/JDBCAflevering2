@@ -15,6 +15,11 @@ import static org.junit.Assert.fail;
 public class DALTest {
     IUserDAO userDAO = new UserDAOImpls185020();
 
+    @Test
+    public void deleteUser() throws IUserDAO.DALException {
+        userDAO.deleteUser(13);
+    }
+
 
     @Test
     public void test() {
@@ -56,6 +61,11 @@ public class DALTest {
             receivedUser = userDAO.getUser(13);
             assertEquals(testUser.getUserName(),receivedUser.getUserName());
             assertEquals(testUser.getIni(), receivedUser.getIni());
+
+            for (String rolle : receivedUser.getRoles()) {
+                System.out.println(rolle);
+            }
+
             assertEquals(testUser.getRoles().get(0),receivedUser.getRoles().get(0));
             assertEquals(testUser.getRoles().size(),receivedUser.getRoles().size());
 
@@ -72,8 +82,5 @@ public class DALTest {
             e.printStackTrace();
             fail();
         }
-
     }
-
-
 }

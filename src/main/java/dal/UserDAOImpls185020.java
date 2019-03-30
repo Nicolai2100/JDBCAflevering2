@@ -144,8 +144,8 @@ public class UserDAOImpls185020 implements IUserDAO {
                 pSmtUpdateUser.setInt(3, user.getUserId());
                 pSmtUpdateUser.executeUpdate();
                 //Hvis brugeren har fået nye roller oprettes de - men sletter ikke, hvis han har fået dem fjernet!
-                deleteAllRoles(conn, user.getUserId());
-                setUserRoles(conn, user);
+
+                roleTransAct(conn, user);
                 System.out.println("The user was successfully updated!");
                 pSmtUpdateUser.close();
             }
@@ -349,6 +349,51 @@ public class UserDAOImpls185020 implements IUserDAO {
             prep.setInt(1, userid);
             prep.executeUpdate();
         } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    public void roleTransAct(Connection conn, IUserDTO user) {
+        List<String> newUserRoles = user.getRoles();
+        List<String> DBUserRoles = getUserRoleList(conn, user.getUserId());
+        try {
+            PreparedStatement prepDelete = conn.prepareStatement(
+                    "DELETE FROM user_roles " +
+                            "WHERE userid = ? " +
+                            "AND roleid = ?"
+            );
+            prepDelete.setInt(1, user.getUserId());
+
+            PreparedStatement prepInsert = conn.prepareStatement(
+                    "INSERT INTO user_roles " +
+                            "VALUES(?,?)"
+            );
+            prepInsert.setInt(1, user.getUserId());
+            //Transaction begynder
+            conn.setAutoCommit(false);
+            //De gamle roller der ikke indgår i det opdaterede rollesæt skal slettes fra DB.
+            for (String role : DBUserRoles) {
+                if (!newUserRoles.contains(role)) {
+                    int roleid = getRoleID(conn, role);
+                    prepDelete.setInt(2, roleid);
+                    int success = prepDelete.executeUpdate();
+                    if (success < 1) {
+                        conn.rollback();
+                    }
+                }
+            }
+            //De nye roller der ikke indgår i det rollesæt der ligger i DB skal indsættes.
+            for (String role : newUserRoles) {
+                if (!DBUserRoles.contains(role)) {
+                    int roleid = getRoleID(conn, role);
+                    prepInsert.setInt(2, roleid);
+                    int success = prepInsert.executeUpdate();
+                    if (success < 1) {
+                        conn.rollback();
+                    }
+                }
+            }
+            conn.commit();
+        } catch (SQLException | DALException e) {
             System.out.println(e.getMessage());
         }
     }
